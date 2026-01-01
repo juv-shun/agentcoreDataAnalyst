@@ -43,3 +43,8 @@ Thumbs.db
 # Bedrock AgentCore
 .bedrock_agentcore
 .bedrock_agentcore.yaml
+
+# CDK
+cdk.out/
+.cdk.staging/
+cdk.context.json
