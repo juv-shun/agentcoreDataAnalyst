@@ -42,3 +42,4 @@ Thumbs.db
 
 # Bedrock AgentCore
 .bedrock_agentcore
+.bedrock_agentcore.yaml
