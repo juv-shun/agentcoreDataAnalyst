@@ -151,7 +151,7 @@ export CODE_INTERPRETER_ID=$(aws cloudformation describe-stacks \
   --query "Stacks[0].Outputs[?OutputKey=='CodeInterpreterId'].OutputValue" \
   --output text --region ap-northeast-1)
 
-agentcore deploy CODE_INTERPRETER_ID=$CODE_INTERPRETER_ID
+agentcore deploy --env CODE_INTERPRETER_ID=$CODE_INTERPRETER_ID
 ```
 
 ### 2. 動作確認
