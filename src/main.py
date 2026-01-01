@@ -8,7 +8,7 @@ from model.load import load_model
 app = BedrockAgentCoreApp()
 log = app.logger
 
-REGION = os.getenv("AWS_REGION")
+REGION = "ap-northeast-1"
 
 # Import AgentCore Gateway as Streamable HTTP MCP Client
 mcp_client = get_streamable_http_mcp_client()
@@ -27,8 +27,7 @@ async def invoke(payload, context):
     code_interpreter = AgentCoreCodeInterpreter(
         region=REGION,
         session_name=session_id,
-        auto_create=True,
-        persist_sessions=True
+        identifier=os.environ["CODE_INTERPRETER_ID"],
     )
 
     with mcp_client as client:
