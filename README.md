@@ -92,11 +92,17 @@ uv run cdk deploy --all --require-approval never
 - S3 バケット（データ保存用）
 - Code Interpreter（Python コード実行環境）
   - 現在、SANDBOX 環境ではなぜか S3 へのアクセスができないため、ネットワークモードを PUBLIC にしている。
+- AgentCore Runtime 用 IAM ロール（agentcore deploy で使用）
 
 ### 3. agentcore CLI の設定
 
 ```bash
-agentcore configure -e src/main.py -r ap-northeast-1
+export RUNTIME_ROLE_ARN=$(aws cloudformation describe-stacks \
+  --stack-name DataAnalystRuntimeRoleStack \
+  --query "Stacks[0].Outputs[?OutputKey=='AgentCoreRuntimeRoleArn'].OutputValue" \
+  --output text --region ap-northeast-1)
+
+agentcore configure -e src/main.py -er $RUNTIME_ROLE_ARN -r ap-northeast-1
 ```
 
 設定値は、各自好きなように設定してください。サンプルを以下に示します。
@@ -170,6 +176,7 @@ agentcore invoke '{"prompt": "1+1は？"}'
 ├── infra/                      # AWS CDK インフラ
 │   ├── app.py
 │   └── stacks/
+│       ├── agentcore_runtime_role_stack.py
 │       ├── code_interpreter_stack.py
 │       └── storage_stack.py
 ├── .bedrock_agentcore.yaml     # agentcore 設定
