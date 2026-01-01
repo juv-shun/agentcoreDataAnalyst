@@ -1,67 +1,52 @@
 import os
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
-from strands import Agent, tool
+from strands import Agent
+from strands.models import BedrockModel
 from strands_tools.code_interpreter import AgentCoreCodeInterpreter
-
-from mcp_client.client import get_streamable_http_mcp_client
-from model.load import load_model
 
 app = BedrockAgentCoreApp()
 log = app.logger
 
 REGION = "ap-northeast-1"
-
-# Import AgentCore Gateway as Streamable HTTP MCP Client
-mcp_client = get_streamable_http_mcp_client()
-
-
-# Define a simple function tool
-@tool
-def add_numbers(a: int, b: int) -> int:
-    """Return the sum of two numbers"""
-    return a + b
+MODEL_ID = "jp.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 
 @app.entrypoint
 async def invoke(payload, context):
-    session_id = getattr(context, "session_id", "default")
+    # モデル選択
+    model = BedrockModel(
+        model_id=MODEL_ID,
+        region_name=REGION,
+    )
 
     # Create code interpreter
     code_interpreter = AgentCoreCodeInterpreter(
         region=REGION,
-        session_name=session_id,
         identifier=os.environ["CODE_INTERPRETER_ID"],
     )
 
-    with mcp_client as client:
-        # Get MCP Tools
-        tools = client.list_tools_sync()
+    agent = Agent(
+        model=model,
+        system_prompt="""
+            You are a helpful assistant with code execution capabilities. Use tools when appropriate.
+        """,
+        tools=[code_interpreter.code_interpreter],
+        callback_handler=None,
+    )
+    stream = agent.stream_async(payload.get("prompt"))
+    async for event in stream:
+        # Handle Text parts of the response
+        if "data" in event and isinstance(event["data"], str):
+            yield event["data"]
 
-        # Create agent
-        agent = Agent(
-            model=load_model(),
-            system_prompt="""
-                You are a helpful assistant with code execution capabilities. Use tools when appropriate.
-            """,
-            tools=[code_interpreter.code_interpreter, add_numbers] + tools,
-        )
+        # Implement additional handling for other events
+        # if "toolUse" in event:
+        #   # Process toolUse
 
-        # Execute and format response
-        stream = agent.stream_async(payload.get("prompt"))
-
-        async for event in stream:
-            # Handle Text parts of the response
-            if "data" in event and isinstance(event["data"], str):
-                yield event["data"]
-
-            # Implement additional handling for other events
-            # if "toolUse" in event:
-            #   # Process toolUse
-
-            # Handle end of stream
-            # if "result" in event:
-            #    yield(format_response(event["result"]))
+        # Handle end of stream
+        # if "result" in event:
+        #    yield(format_response(event["result"]))
 
 
 def format_response(result) -> str:
