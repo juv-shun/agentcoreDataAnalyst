@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent
@@ -10,6 +12,7 @@ log = app.logger
 
 REGION = "ap-northeast-1"
 MODEL_ID = "jp.anthropic.claude-haiku-4-5-20251001-v1:0"
+SYSTEM_PROMPT = Path(__file__).with_name("system_prompt.md").read_text(encoding="utf-8")
 
 
 @app.entrypoint
@@ -28,13 +31,12 @@ async def invoke(payload, context):
 
     agent = Agent(
         model=model,
-        system_prompt="""
-            You are a helpful assistant with code execution capabilities. Use tools when appropriate.
-        """,
+        system_prompt=SYSTEM_PROMPT,
         tools=[code_interpreter.code_interpreter],
         callback_handler=None,
     )
-    stream = agent.stream_async(payload.get("prompt"))
+    prompt = json.dumps(payload, ensure_ascii=False)
+    stream = agent.stream_async(prompt)
     async for event in stream:
         # Handle Text parts of the response
         if "data" in event and isinstance(event["data"], str):
